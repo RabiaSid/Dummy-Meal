@@ -1,101 +1,204 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import Card from "@/components/card";
+import Button from "@/components/button";
+import { Get } from "@/config/api-method";
+import AppModal from "@/components/modal";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [activeTab, setActiveTab] = useState<any>("All meals");
+  const [listData, setListData] = useState<any>([]);
+  const [selectedMeal, setSelectedMeal] = useState<any>(null);
+  const [activeCard, setActiveCard] = useState<number | null>(null);
+  const [isVisibleOpen, setIsVisibleOpen] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const [weekMeals, setWeekMeals] = useState<any>({
+    "Week 1": [],
+    "Week 2": [],
+    "Week 3": [],
+    "Week 4": [],
+  });
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const tabs = ["All meals", "Week 1", "Week 2", "Week 3", "Week 4"];
+
+  const getData = () => {
+    Get("recipes")
+      .then((res) => {
+        setListData([...res.data.recipes]);
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  // Add active card index and select the meal
+  const handleCardClick = (index: number, meal: any) => {
+    setActiveCard(index);
+    setSelectedMeal(meal);
+  };
+
+  // Add selected meal to the selected week, preventing duplicates
+  const saveMealToWeek = () => {
+    if (selectedWeek && selectedMeal) {
+      const mealExists = weekMeals[selectedWeek].some(
+        (meal: any) => meal.name === selectedMeal.name
+      );
+      if (!mealExists) {
+        setWeekMeals((prev: any) => ({
+          ...prev,
+          [selectedWeek]: [...prev[selectedWeek], selectedMeal],
+        }));
+
+        // Deselect the card and selected week
+        setSelectedMeal(null);
+        setActiveCard(null);
+        setSelectedWeek(null);
+
+        // Close the modal
+        setIsVisibleOpen(false);
+      } else {
+        alert("This meal has already been added to the selected week!");
+      }
+    }
+  };
+
+  // Delete a meal from a specific week
+  const deleteMealFromWeek = (week: string, index: number) => {
+    setWeekMeals((prev: any) => ({
+      ...prev,
+      [week]: prev[week].filter((_: any, i: number) => i !== index),
+    }));
+  };
+
+  const showVisible = () => {
+    setIsVisibleOpen(true);
+  };
+
+  const handleOk = () => {
+    // Close the modal and reset selected week
+    setIsVisibleOpen(false);
+    setSelectedWeek(null);
+  };
+
+  const handleCancel = () => {
+    // Close the modal and reset selected week
+    setIsVisibleOpen(false);
+    setSelectedWeek(null);
+  };
+
+  return (
+    <main className="min-h-screen homeSection">
+      <div className="bannerSection">
+        <div className="absolute inset-0 bg-cover bg-no-repeat bg-center bg-[url('../../public/bg-Img.png')]"></div>
+        <div className="z-10 bannerContent">
+          <h1 className="text-4xl font-bold text-gray-900">
+            Optimize Your Meal
+          </h1>
+          <p className="mt-4 text-lg text-gray-700">
+            Select meals to add to weeks. You can edit, modify, and change the
+            meal weeks.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      <div className="tabSection z-10">
+        <div className="lg:container lg:mx-auto px-4 ">
+          <h2>Week Orders</h2>
+        </div>
+
+        <div className="tabListDiv">
+          <div className="tabList mb-[45px] lg:container lg:mx-auto px-4 ">
+            <ul>
+              {tabs.map((tab) => (
+                <li
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`cursor-pointer text-lg font-semibold ${
+                    activeTab === tab ? "activeTab" : "Tab"
+                  }`}
+                >
+                  {tab}
+                </li>
+              ))}
+            </ul>
+            <div>
+              <Button
+                label="Add to Week"
+                className={`addBtn ${activeCard !== null ? "active" : null}`}
+                onClick={() => {
+                  if (activeCard !== null) {
+                    showVisible(); // Open the modal when a card is selected
+                  }
+                }}
+              />
+
+              {/* Modal to select the week and save the meal */}
+              <AppModal
+                open={isVisibleOpen}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                childern={
+                  <div className="weekModal">
+                    <h4>Select Week</h4>
+                    <ul>
+                      {tabs.slice(1).map((week) => (
+                        <li
+                          key={week}
+                          className={`cursor-pointer ${
+                            selectedWeek === week ? "selected" : ""
+                          }`}
+                          onClick={() => setSelectedWeek(week)}
+                        >
+                          {week}
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      label="Save"
+                      className={`saveBtn ${
+                        selectedWeek ? "active" : "disabled"
+                      }`}
+                      onClick={saveMealToWeek}
+                    />
+                  </div>
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Display content based on active tab */}
+        <div className="lg:container lg:mx-auto px-4 ">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {activeTab === "All meals"
+              ? listData?.map((meal: any, i: any) => (
+                  <Card
+                    key={i}
+                    className={`card ${activeCard === i ? "active" : ""}`}
+                    title={meal.name}
+                    desc={meal.instructions}
+                    cardImg={meal.image}
+                    onClick={() => handleCardClick(i, meal)}
+                  />
+                ))
+              : weekMeals[activeTab]?.map((meal: any, i: any) => (
+                  <div key={i} className="relative">
+                    <Card
+                      className={`card ${activeCard === i ? "active" : ""}`}
+                      title={meal.name}
+                      desc={meal.instructions}
+                      cardImg={meal.image}
+                      onDeleteClick={() => deleteMealFromWeek(activeTab, i)}
+                    />
+                  </div>
+                ))}
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
